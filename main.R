@@ -1,5 +1,6 @@
-library(tidyquant)
-library(tidyverse)
+packages <- installed.packages()
+install.packages('lubridate')
+write.csv(packages, file = "requirments.txt")
 
 # need to split estimation and event period (+- 2 days?)
 
