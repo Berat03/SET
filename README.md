@@ -16,6 +16,8 @@ An application that gives you many inputs, and ouputs- all in the realm of event
 - Using ML (sentiment analysis) I can try to link a event from the news/social media to a specific date that shows significant results.
 - Supposedly we can use bootstrap for event study
 - Deploy on AWS -> Great for CV
-
+- How can I prestore events, and allows users to add new ones
+- 
 ### Current Gameplan:
 To add each feature one by one, then once I can run combinations of a few signficane tests and a few market models- i will begin to develop website with UI using ?shiny? for ease of use.
+- Deploy on AWS.
