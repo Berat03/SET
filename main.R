@@ -1,28 +1,42 @@
-packages <- installed.packages()
-install.packages('lubridate')
-write.csv(packages, file = "requirments.txt")
+# need to split estimation and event time periods
+  # give user option to determine 
+library(tidyquant)
+library(tidyverse)
 
-# need to split estimation and event period (+- 2 days?)
+stock  <- tq_get("MSFT", get = "stock.prices", from = "2019-11-01", to = "2020-01-01", periodicity = "daily") |>
+  tq_mutate(mutate_fun = periodReturn, col_rename = 'stock_return', period = "daily")  |>
+  select(symbol, date, adjusted, stock_return)
+#mutate(stock_cum_return = cumsum(stock_return))
 
-AAPL  <- tq_get("AAPL", get = "stock.prices", from = "2010-01-01", to = "2013-01-01", periodicity = "monthly")
-SP500 <- tq_get("^GSPC", get = "stock.prices", from = "2010-01-01", to = "2013-01-01", periodicity = "monthly")
-
-
-AAPL<- AAPL |> 
-  tq_mutate(mutate_fun = periodReturn, col_rename = 'return', period = "monthly") |>
-  select(date, close, return) |>
-  mutate(cum_return = cumsum(return))
-
-
-SP500<- SP500 |>
-  tq_mutate(mutate_fun = periodReturn, col_rename = 'return', period = "monthly") |>
-  select(date, close, return) |>
-  mutate(cum_return = cumsum(return))
+bench <- tq_get("^GSPC", get = "stock.prices", from = "2019-11-01", to = "2020-01-01", periodicity = "daily") |>
+  tq_mutate(mutate_fun = periodReturn, col_rename = 'bench_return', period = "daily") |>
+  select(symbol, date, adjusted, bench_return)
 
 
-#graph looks to be working
-ggplot(AAPL, aes(x = date)) + 
-  geom_line(aes(y = return, colour = "return")) + 
-  geom_line(aes(y = cum_return, colour = "cum_return"))
+#mutate(bench_cum_return = cumsum(bench_return))
+
+#  for market anaylsis
+
+RaRb <- left_join(stock, bench, by = c("date" = "date")) 
+
+CAPM_table <- RaRb |>
+  tq_performance(Ra = stock_return, Rb = bench_return, performance_fun = table.CAPM)
+
+alpha <- CAPM_table$Alpha
+beta <- CAPM_table$Beta
+
+rm(RaRb)
+abnormal_stock <- abnormal_stock |>
+  mutate(market_model_return = (alpha + beta * bench_return)) |> # no error term, rv
+  mutate(abnormal_return = (stock_return - (alpha + beta * bench_return))) 
+
+
+ggplot(data = abnormal_stock, aes(x = date)) +
+  geom_line(aes(y = stock_return, color = 'blue')) + 
+  geom_line(aes(y = bench_return, color = 'red')) + 
+  geom_line(aes(y = abnormal_return, color = 'yellow')) +
+  geom_line(aes(y = market_model_return, color = 'green')) +
+  labs(x = '', y = 'Stock Metrics')
+
 
 
