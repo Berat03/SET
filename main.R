@@ -40,6 +40,21 @@ abnormal_stock <- RaRb |>
 # -Begin- Graph Plots
 
 #Should I pivot my data longer?? to enable better ggplot functionality?
+
+pivot_longer  <- abnormal_stock |>
+  pivot_longer(col = c(symbol.x, symbol.y), names_to = 'Obsolete', values_to='Symbol')
+pivot_long_2 <- pivot_longer |>
+  pivot_longer(cols = c(stock_return, bench_return, market_model_return, abnormal_return), names_to = "Different_Returns", values_to = "Metric") |>
+  select(Symbol, date, days_before, adjusted.x, adjusted.y , Different_Returns, Metric)
+
+ggplot(data = pivot_long_2, aes(x =days_before)) +
+  geom_line(aes(y = Metric, color = Different_Returns), ) +
+  labs(x = 'Dates before event', y = '% Returns') +
+  geom_vline(aes(xintercept = 0)) +
+  labs(color='Different Mettrics') +
+  scale_x_reverse()
+
+
 ggplot(data = abnormal_stock, aes(x = days_before)) +
   geom_line(aes(y = stock_return, color = 'blue')) + 
   geom_line(aes(y = bench_return, color = 'red')) + 
