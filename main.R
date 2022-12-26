@@ -1,18 +1,20 @@
 library(tidyquant)
-library(tidyverse)
+library(tidyverse) # for docker image only install what i use, and only the newest functioning instance of it
 library(formattable)
 
-# -Begin- Get relevant info & mutate DFs
-event_date <- YMD('2003-01-10') 
-ticker_stock = "MSFT"
+rm(list=ls()) 
+###
 
-stock  <- tq_get(ticker_stock, get = "stock.prices", from = "2002-01-15", to = "2003-01-13", periodicity = "daily") |>
+# -Begin- Get relevant info & mutate DFs
+event_date <- YMD('2001-09-11') 
+
+stock  <- tq_get("MSFT", get = "stock.prices", from = "2001-01-15", to = "2001-09-20", periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'stock_return', period = "daily")  |>
   mutate(days_before = as.numeric(event_date - date)) |> # actual days, not trading days!!!
   select(symbol, date, adjusted, stock_return, days_before)
 
 ticker_bench = "^GSPC" 
-bench <- tq_get(ticker_bench, get = "stock.prices", from = "2002-01-15", to = "2003-01-13", periodicity = "daily") |>
+bench <- tq_get(ticker_bench, get = "stock.prices", from = "2001-01-15", to = "2003-09-15", periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'bench_return', period = "daily") |>
   select(symbol, date, adjusted, bench_return)
 
@@ -34,14 +36,8 @@ regression_model <- lm(data = RaRb, bench_return ~ stock_return)
 summary_regression_model <- summary(regression_model)
 rs <- summary_regression_model$r.squared # same as one from CAPM
 
-rsqaure
-rs
-
 residual_se <- summary_regression_model$coefficients[[2,2]]
-residual_se
-     
-plot(stock_return ~ bench_return,  data = RaRb)
-abline(regression_model)
+
 
 
 
@@ -53,12 +49,19 @@ abnormal_stock <- RaRb |>
 
 t_test_stock <- abnormal_stock |> # for CI 95%
   mutate(t_value =  abnormal_return / residual_se) |>
-  mutate(signfiicant = ifelse(abs(t_value) > 1.96, "yes", "no"))
-?ifelse
+  mutate(significant = ifelse(abs(t_value) > 1.96, "yes", "no")) |>
+  select(date, days_before, adjusted.x, abnormal_return, t_value, significant) |>
+  filter(days_before < 5 & days_before > - 10000)
+
+ggplot(t_test_stock, aes(x = days_before)) +
+  geom_line(aes(y=t_value)) +
+  geom_hline(yintercept = 1.96, color = 'red')+
+  geom_hline(yintercept = -1.96, color = 'red') +
+  scale_x_reverse()
 
 # -Begin- Graph Plots
 
-pivot_longer  <- abnormal_stock |>
+pivot_longer  <- abnormal_stock |> 
   pivot_longer(col = c(symbol.x, symbol.y), names_to = 'Obsolete', values_to='Symbol')
 pivot_long_2 <- pivot_longer |>
   pivot_longer(cols = c(stock_return, bench_return, market_model_return, abnormal_return), names_to = "Different_Returns", values_to = "Metric") |>
