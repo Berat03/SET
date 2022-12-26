@@ -1,9 +1,8 @@
 library(tidyquant)
-library(tidyverse) # for docker image only install what i use, and only the newest functioning instance of it
+library(tidyverse)
 library(formattable)
-
+# for docker image only install what i use, and only the newest functioning instance of it
 rm(list=ls()) 
-###
 
 # -Begin- Get relevant info & mutate DFs
 event_date <- YMD('2001-09-11') 
@@ -18,7 +17,7 @@ bench <- tq_get(ticker_bench, get = "stock.prices", from = "2001-01-15", to = "2
   tq_mutate(mutate_fun = periodReturn, col_rename = 'bench_return', period = "daily") |>
   select(symbol, date, adjusted, bench_return)
 
-# -End- Get relevant info & mutate DFs 
+# -End- 
 
 # -Begin-  Calc 
 RaRb <- left_join(stock, bench, by = c("date" = "date")) 
@@ -57,31 +56,22 @@ ggplot(t_test_stock, aes(x = days_before)) +
   geom_line(aes(y=t_value)) +
   geom_hline(yintercept = 1.96, color = 'red')+
   geom_hline(yintercept = -1.96, color = 'red') +
-  scale_x_reverse()
+  scale_x_reverse() 
+# -End- 
 
 # -Begin- Graph Plots
 
-pivot_longer  <- abnormal_stock |> 
-  pivot_longer(col = c(symbol.x, symbol.y), names_to = 'Obsolete', values_to='Symbol')
-pivot_long_2 <- pivot_longer |>
+pivot_longer  <- abnormal_stock |> # for plot format with all metrics
+  pivot_longer(col = c(symbol.x, symbol.y), names_to = 'Obsolete', values_to='Symbol') |>
+  #only have so many metrics to compare, with compress later
   pivot_longer(cols = c(stock_return, bench_return, market_model_return, abnormal_return), names_to = "Different_Returns", values_to = "Metric") |>
   select(Symbol, date, days_before, adjusted.x, adjusted.y , Different_Returns, Metric)
 
-ggplot(data = pivot_long_2, aes(x =days_before)) +
+ggplot(data = pivot_longer, aes(x =days_before)) +
   geom_line(aes(y = Metric, color = Different_Returns), ) +
   labs(x = 'Dates before event', y = '% Returns') +
   geom_vline(aes(xintercept = 0)) +
   labs(color='Different Mettrics') +
-  scale_x_reverse()
-
-
-ggplot(data = abnormal_stock, aes(x = days_before)) +
-  #geom_line(aes(y = stock_return, color = 'blue')) + 
-  #geom_line(aes(y = bench_return, color = 'red')) + 
-  geom_line(aes(y = abnormal_return, color = 'yellow')) +
-  geom_line(aes(y = market_model_return, color = 'green')) +
-  labs(x = '', y = '') +
-  geom_vline(aes(xintercept = 0, linetype =''), show.legend = FALSE) +
   scale_x_reverse()
 
 # -End- Graph Plots
