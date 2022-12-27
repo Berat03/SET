@@ -1,8 +1,12 @@
+#GOAL:
+# Produce a dataframe with all relevent infomation, to be used in CAR, BHAR & T-tests
 rm(list=ls()) 
 
 ticker_stock <- "ATVI"
 ticker_bench = "^GSPC"
+
 event_date <- YMD('2018-11-5') 
+# later, aft i do calc i w
 
 temp_begin <- YMD('2018-07-31') # to calc
 begin_date = YMD('2018-08-01') 
@@ -19,18 +23,19 @@ end <- YMD('2018-11-20') # not inclusive????
 stock <- tq_get(ticker_stock, get = "stock.prices", from = temp_begin, to = end, periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'stock_return', period = "daily")  |>
   select(symbol, date, stock_adj = adjusted, stock_return) |>
-  filter(date >= begin_date) # too speciifc
+  filter(date >= begin_date)
 
 
-bench <- tq_get(ticker_bench, get = "stock.prices", from = temp_begin, to = end_date, periodicity = "daily") |>
+bench <- tq_get(ticker_bench, get = "stock.prices", from = temp_begin, to = end, periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'bench_return', period = "daily") |>
   select(symbol, date, bench_adj = adjusted, bench_return) |>
-  filter(date >= begin_date) # too speciifc
+  filter(date >= begin_date) 
 
 
 
 abnormal_returns <- left_join(stock, bench, by = c("date" = "date")) |>
   mutate(ID = row_number())
+
 eventID <- which(abnormal_returns$date == event_date, arr.ind=TRUE)
 
 abnormal_returns <- abnormal_returns |>
@@ -50,10 +55,10 @@ CAPM_table <- est |>
 
 alpha <- CAPM_table$Alpha
 beta <- CAPM_table$Beta
-
+rm(est)
 
 abnormal_returns <- abnormal_returns |>
-  select(date, stock_adj, bench_adj, stock_return, bench_return ) |>
+  select(ID, date,days_before, time_frame ,stock_adj, bench_adj, stock_return, bench_return,  ) |>
   mutate(constant_return = stock_return - average_stock_returns_est) |>
   mutate(market_model_return = stock_return - bench_return) |>
   mutate(CAPM_return =  stock_return - (alpha + beta*bench_return))
