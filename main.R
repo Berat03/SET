@@ -1,6 +1,6 @@
 library(tidyquant)
 library(tidyverse)
-library(formattable)
+erere
 # for docker image only install what i use, and only the newest functioning instance of it
 rm(list=ls()) 
 
