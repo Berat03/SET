@@ -1,6 +1,3 @@
-library(tidyquant)
-library(tidyverse)
-
 rm(list=ls()) 
 
 ticker_stock <- "ATVI"
@@ -99,7 +96,18 @@ BHAR_returns <- tibble(time_periods = time_periods,
                        market_model_return = c(bhar(ANT, "market_model_return"), bhar(EVENT, "market_model_return"), bhar(ADJ, "market_model_return"), bhar(TOTAL, "market_model_return")),
                        CAPM_return = c(bhar(ANT, "CAPM_return"), bhar(EVENT, "CAPM_return"), bhar(ADJ, "CAPM_return"), bhar(TOTAL, "CAPM_return")))
 
-?round
 T_stat_CAR <- cbind(CAR_returns[1],round(CAR_returns[-1]/STD_errors_2[-1],digits = 6))
-T_stat_CAR
+T_stat_BHAR <- cbind(BHAR_returns[1],round(BHAR_returns[-1]/STD_errors_2[-1],digits = 6))
+
+P_val_CAR <- T_stat_CAR |>
+  mutate(constant_p_val = (2 * pt(q=abs(T_stat_CAR$constant_return), lower.tail = FALSE, df=56))) |>
+  mutate(market_model_p_val = (2 * pt(q=abs(T_stat_CAR$market_model_return), lower.tail = FALSE, df=56))) |>
+  mutate(CAPM_p_val = (2 * pt(q=abs(T_stat_CAR$CAPM_return), lower.tail = FALSE, df=56))) |>
+  select(time_periods, constant_p_val, market_model_p_val, CAPM_p_val) 
+
+P_val_BHAR <- T_stat_BHAR |>
+  mutate(constant_p_val = (2 * pt(q=abs(T_stat_BHAR$constant_return), lower.tail = FALSE, df=56))) |>
+  mutate(market_model_p_val = (2 * pt(q=abs(T_stat_BHAR$market_model_return), lower.tail = FALSE, df=56))) |>
+  mutate(CAPM_p_val = (2 * pt(q=abs(T_stat_BHAR$CAPM_return), lower.tail = FALSE, df=56))) |>
+  select(time_periods, constant_p_val, market_model_p_val, CAPM_p_val)
 
