@@ -37,16 +37,17 @@ bench <- bench[order(bench$date),]
 
 abnormal_returns <- left_join(stock, bench, by = c("date" = "date")) |>
   mutate(ID = row_number()) 
+  
 eventID <- which(abnormal_returns$date == event_date, arr.ind=TRUE)
 
-#
+
 abnormal_returns <- abnormal_returns |>
-  mutate(days_before = -1 *(ID - eventID)) |>
-  filter(days_before <= 75 & days_before >= -10) |> # later add ability for user to adjust time periods,  
-  select(date, days_before, stock_adj, bench_adj, stock_return, bench_return) |>
-  mutate(time_period = ifelse(days_before > 10, "EST", ifelse(days_before <= 10 & days_before >= 1, "ANT", #should NOT be any NA values
-                                                              ifelse(date == event_date, "EVENT", ifelse(days_before < 0, "ADJ", NA))))) 
-                                                                                                  
+  mutate(dates_relative = -1 *(ID - eventID)) |>
+  mutate(time_period = ifelse(dates_relative >= 11, "EST", ifelse(dates_relative <= 10 & dates_relative >= 1, "ANT", 
+                                                                  ifelse(date == event_date, "EVENT", ifelse(dates_relative < 0, "ADJ", NA))))) |>
+  filter(dates_relative <= 100 & dates_relative >= -10) |> # 100 is est + adj, 10 is adj/est, 0 dates event 
+  select(date, dates_relative, time_period, stock_adj, bench_adj, stock_return, bench_return) 
+
 # - End -
 
 # - Calculate CAR, BHAR, T-stats, P-values for each period EST, ANT, EVENT, ADJ - 
@@ -62,7 +63,7 @@ alpha <- CAPM_table$Alpha
 beta <- CAPM_table$Beta # !have as an output, so user can decide which model to sue 
 
 abnormal_returns <- abnormal_returns |>
-  select(date,days_before, time_period,stock_adj, bench_adj, stock_return, bench_return,  ) |>
+  select(date,dates_relative, time_period,stock_adj, bench_adj, stock_return, bench_return,  ) |>
   mutate(constant_return = stock_return - average_stock_returns_est) |>
   mutate(market_model_return = stock_return - bench_return) |>
   mutate(CAPM_return =  stock_return - (alpha + beta*bench_return))
