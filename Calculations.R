@@ -10,10 +10,10 @@ ticker_bench = "^GSPC" # !User input!
 event_date <- YMD('2018-11-5') # !User input!
 
 ### Will implement at a later date --
-estimation_period <- 10 # !User input!
-event_period <- 1 # !User input!
-anticipation_period <- 10 # !User input!
-adjustment_period <- 10 # !User input!
+estimation_period <- 10 
+event_period <- 1 
+anticipation_period <- 10 
+adjustment_period <- 10 
 ### Will implement at a later date --
 
 
@@ -39,6 +39,7 @@ abnormal_returns <- left_join(stock, bench, by = c("date" = "date")) |>
   mutate(ID = row_number()) 
 eventID <- which(abnormal_returns$date == event_date, arr.ind=TRUE)
 
+#
 abnormal_returns <- abnormal_returns |>
   mutate(days_before = -1 *(ID - eventID)) |>
   filter(days_before <= 75 & days_before >= -10) |> # later add ability for user to adjust time periods,  
@@ -121,4 +122,26 @@ P_val_BHAR <- T_stat_BHAR |>
   select(time_periods, constant_p_val, market_model_p_val, CAPM_p_val)
 
 # - End - 
+
+# should i calculate p-values for i = 0: i<= 10: i++ 
+# would tell me what period values are significant in
+# same for anticipation
+# would be a good graph
+# make this as a new ?tibble?, dont forget to ignore EST
+# can plot this, with a horizontal line at significance level
+# graph udpates as you change =- days 
+#will give dates when significant
+
+
+# Not to be used in plotting, hence no need to take up memory
+rm(ANT)
+rm(ADJ)
+rm(EST)
+rm(EVENT)
+rm(TOTAL)
+rm(bench)
+rm(stock)
+rm(CAPM_table)
+rm(eventID)
+rm(inital_df)
 
