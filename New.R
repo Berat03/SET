@@ -1,3 +1,5 @@
+library(tidyverse)
+library(tidyquant)
 rm(list=ls()) 
 
 # - Get and format data for time period(s)- 
@@ -39,7 +41,7 @@ eventID <- which(abnormal_returns$date == event_date, arr.ind=TRUE)
 
 abnormal_returns <- abnormal_returns |>
   mutate(days_before = -1 *(ID - eventID)) |>
-  filter(days_before <= 100 & days_before >= -10) |> # later add ability for user to adjust time periods,  
+  filter(days_before <= 75 & days_before >= -10) |> # later add ability for user to adjust time periods,  
   select(date, days_before, stock_adj, bench_adj, stock_return, bench_return) |>
   mutate(time_period = ifelse(days_before > 10, "EST", ifelse(days_before <= 10 & days_before >= 1, "ANT", #should NOT be any NA values
                                                               ifelse(date == event_date, "EVENT", ifelse(days_before < 0, "ADJ", NA))))) 
@@ -82,12 +84,10 @@ market_stdev <- STDEV(abnormal_returns[["market_model_return"]])
 capm_stdev <- STDEV(abnormal_returns[["CAPM_return"]])
 
       
-STD_errors <- data_frame(time_periods = time_periods, const_stdev = c(const_stdev,(const_stdev * sqrt(10)),(const_stdev * sqrt(10)), (const_stdev * sqrt(21))),
-                           market_stdev = c(market_stdev,(market_stdev * sqrt(10)),(market_stdev * sqrt(10)), (market_stdev * sqrt(21))),
-                           capm_stdev = c(capm_stdev,(capm_stdev * sqrt(10)),(capm_stdev * sqrt(10)), (capm_stdev * sqrt(21))))
+STD_errors <- data_frame(time_periods = time_periods, const_stdev = c((const_stdev * sqrt(10)),const_stdev,(const_stdev * sqrt(10)), (const_stdev * sqrt(21))),
+                           market_stdev = c((market_stdev * sqrt(10)), market_stdev,(market_stdev * sqrt(10)), (market_stdev * sqrt(21))),
+                           capm_stdev = c((capm_stdev * sqrt(10)),capm_stdev,(capm_stdev * sqrt(10)), (capm_stdev * sqrt(21))))
                            
-## FOR ISSUE STD_ERRORS FOR OKAY
-
 CAR_returns <- tibble(time_periods = time_periods, 
                       constant_return = c(sum(ANT$constant_return), sum(EVENT$constant_return), sum(ADJ$constant_return), SUM(TOTAL$constant_return)),
                       market_model_return = c(sum(ANT$market_model_return), sum(EVENT$market_model_return), sum(ADJ$market_model_return), sum(TOTAL$market_model_return)), 
@@ -103,6 +103,7 @@ BHAR_returns <- tibble(time_periods = time_periods,
                        CAPM_return = c(bhar(ANT, "CAPM_return"), bhar(EVENT, "CAPM_return"), bhar(ADJ, "CAPM_return"), bhar(TOTAL, "CAPM_return")))
 
 T_stat_CAR <- cbind(CAR_returns[1],round(CAR_returns[-1]/STD_errors[-1],digits = 6))
+
 T_stat_BHAR <- cbind(BHAR_returns[1],round(BHAR_returns[-1]/STD_errors[-1],digits = 6))
 
 inital_df <- nrow(EST) # number of degrees of freedom i.e estimation days
