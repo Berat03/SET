@@ -1,12 +1,12 @@
-# - Begin - Separate data frames (more readable code)
+# - Begin - Separate data frames
 EST <- abnormal_returns[abnormal_returns$time_period == "EST",]
 ANT <- abnormal_returns[abnormal_returns$time_period == "ANT",]
 EVENT <- abnormal_returns[abnormal_returns$time_period == "EVENT",]
 ADJ <- abnormal_returns[abnormal_returns$time_period == "ADJ",]
 TOTAL <- abnormal_returns[abnormal_returns$time_period != "EST",]
-# - End - Separate data frames (more readable code)
+# - End - Separate data frames 
 
-# - Begin -  Produce tibbles for STD error andCAR/BHAR returns
+# - Begin -  Produce tibbles for STD error, CAR and BHAR returns
 models = c("constant_market", "market_model", "CAPM")
 time_periods = c("Anticipation", "Event", "Adjustment", "Total")
 
@@ -33,9 +33,9 @@ BHAR_returns <- tibble(time_periods = time_periods,
                        constant_return = c(bhar(ANT, "constant_return"), bhar(EVENT, "constant_return"), bhar(ADJ, "constant_return"), bhar(TOTAL, "constant_return")),
                        market_model_return = c(bhar(ANT, "market_model_return"), bhar(EVENT, "market_model_return"), bhar(ADJ, "market_model_return"), bhar(TOTAL, "market_model_return")),
                        CAPM_return = c(bhar(ANT, "CAPM_return"), bhar(EVENT, "CAPM_return"), bhar(ADJ, "CAPM_return"), bhar(TOTAL, "CAPM_return")))
-# - End -  Produce tibbles for STD error andCAR/BHAR returns
+# - End -  Produce tibbles for STD error, CAR and BHAR returns
 
-# - Begin - Calculating statistical T and P lvaues
+# - Begin - Calculating statistical T and P-values
 T_stat_CAR <- cbind(CAR_returns[1],round(CAR_returns[-1]/STD_errors[-1],digits = 6))
 
 T_stat_BHAR <- cbind(BHAR_returns[1],round(BHAR_returns[-1]/STD_errors[-1],digits = 6))
@@ -53,27 +53,13 @@ P_val_BHAR <- T_stat_BHAR |>
   mutate(market_model_p_val = (2 * pt(q=abs(T_stat_BHAR$market_model_return), lower.tail = FALSE, df=(inital_df - 1)))) |>
   mutate(CAPM_p_val = (2 * pt(q=abs(T_stat_BHAR$CAPM_return), lower.tail = FALSE, df=(inital_df - 2)))) |>
   select(time_periods, constant_p_val, market_model_p_val, CAPM_p_val)
-# - End - Calculating statistical T and P lvaues
+# - End - Calculating statistical T and P-values
 
 
-# should i calculate p-values for i = 0: i<= 10: i++ 
-# would tell me what period values are significant in
-# same for anticipation
-# would be a good graph
-# make this as a new ?tibble?, dont forget to ignore EST
-# can plot this, with a horizontal line at significance level
-# graph udpates as you change =- days 
-#will give dates when significant
+# this will be mvp
 
+# need to add our own adjustment and anticipation time period input
+# calculate p value of everything in TOTAL, so we can plot how it would change as time period changes
+# give the user option to select which model to display and use to test 
+# output: give user p values for select model
 
-# Not to be used in plotting, hence no need to take up memory
-rm(ANT)
-rm(ADJ)
-rm(EST)
-rm(EVENT)
-rm(TOTAL)
-rm(bench)
-rm(stock)
-rm(CAPM_table)
-rm(eventID)
-rm(inital_df)
