@@ -3,11 +3,7 @@ library(shiny)
 library(shinydashboard)
 
 calc_abr <- function(ticker_stock, ticker_bench, event_date) {
-  ticker_stock <- ticker_stock
-  ticker_bench = ticker_bench
-  event_date <- YMD(event_date) 
-  # - End - User Inputs
-  
+
   begin <-event_date - as.difftime(200, unit="days") 
   end <-event_date + as.difftime(30, unit="days") 
   
@@ -53,8 +49,8 @@ calc_abr <- function(ticker_stock, ticker_bench, event_date) {
 
 calc_stats <- function(abnormal_returns, ARM){
   # - Begin - Separate data frames
-  EST <- abnormal_returns[abnormal_returns$time_period == "EST",]
-  ANT <- abnormal_returns[abnormal_returns$time_period == "ANT",]
+  EST <- abnormal_returns[abnormal_returns$time_period == "EST",] #easier to calculate and mor readable,
+  ANT <- abnormal_returns[abnormal_returns$time_period == "ANT",] # probably not be most efficent
   EVENT <- abnormal_returns[abnormal_returns$time_period == "EVENT",]
   ADJ <- abnormal_returns[abnormal_returns$time_period == "ADJ",]
   TOTAL <- abnormal_returns[abnormal_returns$time_period != "EST",]
@@ -110,26 +106,28 @@ calc_stats <- function(abnormal_returns, ARM){
   CAR <- left_join(P_val_CAR, T_stat_CAR, by=("time_periods"))
   BHAR <- left_join(P_val_BHAR, T_stat_BHAR, by=("time_periods"))
   
-  if(ARM == "CAR") return (CAR) else (BHAR)
+  if(ARM == 1) return (CAR) else (BHAR)
     
 }
 
-calc_p_value <-
 
 ui <- dashboardPage(
   dashboardHeader(title = "Significant Event Study"),
-  dashboardSidebar(),
+  dashboardSidebar(disable = TRUE),
   dashboardBody(
     fluidPage(
     box(plotOutput("arplot")),
     box(textInput("ticker_stock", h4("Stock Ticker"), value = "ATVI")),
     box(textInput("ticker_bench", h4("Bench Ticker"), value = "^GSPC")),
-    box(textInput("event_date", h4("Event Date"), value = '2018-11-5')),
+    dateInput("event_date", h4("Date input"), value = '2018-11-5')),
+    box(plotOutput("comp_arplot")),
+    box(selectInput("car_or_bhar", h4("CAR or BHAR"), choices = list("CAR" = 1, "BHAR" = 2), selected = 1)),
     box(tableOutput("stats"))
-            )
-        )
-    )
+    
 
+           )
+)
+    
 
 server <- function(input, output) {
     abr <- reactive({calc_abr(input$ticker_stock, input$ticker_bench, input$event_date)})
@@ -140,8 +138,20 @@ server <- function(input, output) {
         geom_vline(aes(xintercept = 0), linetype = 2) +
         scale_x_reverse()
       })
+    
+    output$comp_arplot <- renderPlot({
+      ar_compare_models <- abr() |>
+        pivot_longer(cols = c(constant_return, market_model_return, CAPM_return), names_to = 'model', values_to = 'value') |>
+        select(date, dates_relative, model, value )
+      
+      ggplot(ar_compare_models, aes(x = dates_relative)) +
+        geom_line(aes(y= value, color = model)) +
+        labs(x = 'Trading Days Before Event', y = 'Abnormal Returns') +
+        geom_vline(aes(xintercept = 0), linetype = 2) +
+        scale_x_reverse()
+    })
 
-    output$stats <- renderTable(calc_stats(abr(), "CAR"))
+    output$stats <- renderTable(calc_stats(abr(), input$car_or_bhar))
 }
 
 # Run the application 
