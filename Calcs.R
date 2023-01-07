@@ -53,6 +53,12 @@ P_val_BHAR <- T_stat_BHAR |>
   mutate(market_model_p_val = (2 * pt(q=abs(T_stat_BHAR$market_model_return), lower.tail = FALSE, df=(inital_df - 1)))) |>
   mutate(CAPM_p_val = (2 * pt(q=abs(T_stat_BHAR$CAPM_return), lower.tail = FALSE, df=(inital_df - 2)))) |>
   select(time_periods, constant_p_val, market_model_p_val, CAPM_p_val)
+
+
+CAR <- left_join(P_val_CAR, T_stat_CAR, by=("time_periods"))
+BHAR <- left_join(P_val_BHAR, T_stat_BHAR, by=("time_periods"))
+
+?rbind
 # - End - Calculating statistical T and P-values
 
 
