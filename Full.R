@@ -134,15 +134,3 @@ P_val_BHAR <- T_stat_BHAR |>
 #will give dates when significant
 
 
-# Not to be used in plotting, hence no need to take up memory
-rm(ANT)
-rm(ADJ)
-rm(EST)
-rm(EVENT)
-rm(TOTAL)
-rm(bench)
-rm(stock)
-rm(CAPM_table)
-rm(eventID)
-rm(inital_df)
-

@@ -2,8 +2,6 @@ ar_compare_models <- abnormal_returns |>
   pivot_longer(cols = c(constant_return, market_model_return, CAPM_return), names_to = 'model', values_to = 'value') |>
   select(date, dates_relative, model, value )
 
-# Comparing different returns models
-# can add a comparision feature
 
 ggplot(ar_compare_models, aes(x = dates_relative)) +
   geom_line(aes(y= value, color = model)) +
