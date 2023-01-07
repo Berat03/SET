@@ -14,16 +14,15 @@ end <-event_date + as.difftime(30, unit="days")
 # - Begin - Load data
 stock <- tq_get(ticker_stock, get = "stock.prices", from = begin, to = end, periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'stock_return', period = "daily")  |>
-  select(symbol, date, stock_adj = adjusted, stock_return) 
-stock <- stock[-1,] 
-stock <- stock[order(stock$date),]
-
+  select(symbol, date, stock_adj = adjusted, stock_return) |>
+  arrange(date) |>
+  slice(-1)
 
 bench <- tq_get(ticker_bench, get = "stock.prices", from = begin, to = end, periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'bench_return', period = "daily") |>
-  select(symbol, date, bench_adj = adjusted, bench_return)
-bench <- bench[-1,]
-bench <- bench[order(bench$date),] 
+  select(symbol, date, bench_adj = adjusted, bench_return) |>
+  arrange(date) |>
+  slice(-1)
 # - End - Load data
 
 # - Begin - Mutate data
@@ -51,4 +50,9 @@ abnormal_returns <- abnormal_returns |>
   mutate(market_model_return = stock_return - bench_return) |>
   mutate(CAPM_return =  stock_return - (alpha + beta*bench_return))
 # - End - Mutate data
+
+ggplot(abnormal_returns, aes(x = dates_relative)) +
+  geom_line(aes(y = stock_adj, color = time_period)) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  scale_x_reverse()
 
