@@ -2,44 +2,31 @@ library(tidyverse)
 library(tidyquant)
 rm(list=ls()) 
 
-# - Get and format data for time period(s)- 
+ticker_stock <- "ATVI" 
+ticker_bench = "^GSPC" 
+event_date <- YMD('2018-11-5') 
 
-ticker_stock <- "ATVI" # !User input!
-ticker_bench = "^GSPC" # !User input!
+begin <-event_date - as.difftime(400, unit="days") 
+end <- event_date + as.difftime(100, unit="days") 
 
-event_date <- YMD('2018-11-5') # !User input!
-
-### Will implement at a later date --
-estimation_period <- 10 
-event_period <- 1 
-anticipation_period <- 10 
-adjustment_period <- 10 
-### Will implement at a later date --
-
-
-begin <-event_date - as.difftime(200, unit="days") 
-end <-event_date + as.difftime(30, unit="days") 
-
-
+# - Begin - Load data
 stock <- tq_get(ticker_stock, get = "stock.prices", from = begin, to = end, periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'stock_return', period = "daily")  |>
-  select(symbol, date, stock_adj = adjusted, stock_return) 
-stock <- stock[-1,] # remove first value due to incorrect returns value
+  select(symbol, date, stock_adj = adjusted, stock_return) |>
+  arrange(date) |>
+  slice(-1)
 
 bench <- tq_get(ticker_bench, get = "stock.prices", from = begin, to = end, periodicity = "daily") |>
   tq_mutate(mutate_fun = periodReturn, col_rename = 'bench_return', period = "daily") |>
-  select(symbol, date, bench_adj = adjusted, bench_return)
-bench <- bench[-1,]
+  select(symbol, date, bench_adj = adjusted, bench_return) |>
+  arrange(date) |>
+  slice(-1)
+# - End - Load data
 
-stock <- stock[order(stock$date),] # just for code safety, r should always give in order
-bench <- bench[order(bench$date),] 
-
-
+# - Begin - Mutate data
 abnormal_returns <- left_join(stock, bench, by = c("date" = "date")) |>
   mutate(ID = row_number()) 
-  
 eventID <- which(abnormal_returns$date == event_date, arr.ind=TRUE)
-
 
 abnormal_returns <- abnormal_returns |>
   mutate(dates_relative = -1 *(ID - eventID)) |>
@@ -48,35 +35,34 @@ abnormal_returns <- abnormal_returns |>
   filter(dates_relative <= 100 & dates_relative >= -10) |> # 100 is est + adj, 10 is adj/est, 0 dates event 
   select(date, dates_relative, time_period, stock_adj, bench_adj, stock_return, bench_return) 
 
-# - End -
-
-# - Calculate CAR, BHAR, T-stats, P-values for each period EST, ANT, EVENT, ADJ - 
-
 EST <-abnormal_returns[abnormal_returns$time_period == "EST",]
-
 average_stock_returns_est<- mean(EST$stock_return)
-
 CAPM_table <- EST |>
   tq_performance(Ra = stock_return, Rb = bench_return, performance_fun = table.CAPM)
-
 alpha <- CAPM_table$Alpha
-beta <- CAPM_table$Beta # !have as an output, so user can decide which model to sue 
+beta <- CAPM_table$Beta 
 
 abnormal_returns <- abnormal_returns |>
   select(date,dates_relative, time_period,stock_adj, bench_adj, stock_return, bench_return,  ) |>
   mutate(constant_return = stock_return - average_stock_returns_est) |>
   mutate(market_model_return = stock_return - bench_return) |>
   mutate(CAPM_return =  stock_return - (alpha + beta*bench_return))
+# - End - Mutate data
 
-# we need to redo EST as we calculated the returns
-EST <-abnormal_returns[abnormal_returns$time_period == "EST",]
-ANT <-abnormal_returns[abnormal_returns$time_period == "ANT",]
-EVENT <-abnormal_returns[abnormal_returns$time_period == "EVENT",]
-ADJ <-abnormal_returns[abnormal_returns$time_period == "ADJ",]
+ggplot(abnormal_returns, aes(x = dates_relative)) +
+  geom_line(aes(y = stock_adj, color = time_period)) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  scale_x_reverse()
+
+# - Begin - Separate data frames
+EST <- abnormal_returns[abnormal_returns$time_period == "EST",]
+ANT <- abnormal_returns[abnormal_returns$time_period == "ANT",]
+EVENT <- abnormal_returns[abnormal_returns$time_period == "EVENT",]
+ADJ <- abnormal_returns[abnormal_returns$time_period == "ADJ",]
 TOTAL <- abnormal_returns[abnormal_returns$time_period != "EST",]
+# - End - Separate data frames 
 
-# now we want to produce our tables
-
+# - Begin -  Produce tibbles for STD error, CAR and BHAR returns
 models = c("constant_market", "market_model", "CAPM")
 time_periods = c("Anticipation", "Event", "Adjustment", "Total")
 
@@ -85,11 +71,11 @@ const_stdev <- STDEV(abnormal_returns[["constant_return"]])
 market_stdev <- STDEV(abnormal_returns[["market_model_return"]])
 capm_stdev <- STDEV(abnormal_returns[["CAPM_return"]])
 
-      
+
 STD_errors <- data_frame(time_periods = time_periods, const_stdev = c((const_stdev * sqrt(10)),const_stdev,(const_stdev * sqrt(10)), (const_stdev * sqrt(21))),
-                           market_stdev = c((market_stdev * sqrt(10)), market_stdev,(market_stdev * sqrt(10)), (market_stdev * sqrt(21))),
-                           capm_stdev = c((capm_stdev * sqrt(10)),capm_stdev,(capm_stdev * sqrt(10)), (capm_stdev * sqrt(21))))
-                           
+                         market_stdev = c((market_stdev * sqrt(10)), market_stdev,(market_stdev * sqrt(10)), (market_stdev * sqrt(21))),
+                         capm_stdev = c((capm_stdev * sqrt(10)),capm_stdev,(capm_stdev * sqrt(10)), (capm_stdev * sqrt(21))))
+
 CAR_returns <- tibble(time_periods = time_periods, 
                       constant_return = c(sum(ANT$constant_return), sum(EVENT$constant_return), sum(ADJ$constant_return), SUM(TOTAL$constant_return)),
                       market_model_return = c(sum(ANT$market_model_return), sum(EVENT$market_model_return), sum(ADJ$market_model_return), sum(TOTAL$market_model_return)), 
@@ -97,18 +83,20 @@ CAR_returns <- tibble(time_periods = time_periods,
 
 bhar <- function(dataframe, model){
   return(apply ((dataframe[, model] + 1), 2, prod) - 1)
-  }
+}
 
 BHAR_returns <- tibble(time_periods = time_periods, 
                        constant_return = c(bhar(ANT, "constant_return"), bhar(EVENT, "constant_return"), bhar(ADJ, "constant_return"), bhar(TOTAL, "constant_return")),
                        market_model_return = c(bhar(ANT, "market_model_return"), bhar(EVENT, "market_model_return"), bhar(ADJ, "market_model_return"), bhar(TOTAL, "market_model_return")),
                        CAPM_return = c(bhar(ANT, "CAPM_return"), bhar(EVENT, "CAPM_return"), bhar(ADJ, "CAPM_return"), bhar(TOTAL, "CAPM_return")))
+# - End -  Produce tibbles for STD error, CAR and BHAR returns
 
+# - Begin - Calculating statistical T and P-values
 T_stat_CAR <- cbind(CAR_returns[1],round(CAR_returns[-1]/STD_errors[-1],digits = 6))
 
 T_stat_BHAR <- cbind(BHAR_returns[1],round(BHAR_returns[-1]/STD_errors[-1],digits = 6))
 
-inital_df <- nrow(EST) # number of degrees of freedom i.e estimation days
+inital_df <- nrow(EST) # number of degrees of freedom, i.e estimation days
 
 P_val_CAR <- T_stat_CAR |>
   mutate(constant_p_val = (2 * pt(q=abs(T_stat_CAR$constant_return), lower.tail = FALSE, df=(inital_df - 1)))) |>
@@ -122,15 +110,23 @@ P_val_BHAR <- T_stat_BHAR |>
   mutate(CAPM_p_val = (2 * pt(q=abs(T_stat_BHAR$CAPM_return), lower.tail = FALSE, df=(inital_df - 2)))) |>
   select(time_periods, constant_p_val, market_model_p_val, CAPM_p_val)
 
-# - End - 
 
-# should i calculate p-values for i = 0: i<= 10: i++ 
-# would tell me what period values are significant in
-# same for anticipation
-# would be a good graph
-# make this as a new ?tibble?, dont forget to ignore EST
-# can plot this, with a horizontal line at significance level
-# graph udpates as you change =- days 
-#will give dates when significant
+CAR <- left_join(P_val_CAR, T_stat_CAR, by=("time_periods"))
+BHAR <- left_join(P_val_BHAR, T_stat_BHAR, by=("time_periods"))
+
+?rbind
+# - End - Calculating statistical T and P-values
+
+ar_compare_models <- abnormal_returns |>
+  pivot_longer(cols = c(constant_return, market_model_return, CAPM_return), names_to = 'model', values_to = 'value') |>
+  select(date, dates_relative, model, value )
 
 
+x <- ggplot(ar_compare_models, aes(x = dates_relative)) +
+  geom_line(aes(y= value, color = model)) +
+  labs(x = 'Trading Days Before Event', y = 'Abnormal Returns') +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  scale_x_reverse()
+
+
+ggplotly(x)

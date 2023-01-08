@@ -1,11 +1,16 @@
-
 library(shiny)
 library(shinydashboard)
+library(ggplot2)
+library(tidyverse)
+library(tidyquant)
+library(plotly)
+library("gsubfn")
 
-calc_abr <- function(ticker_stock, ticker_bench, event_date) {
-
-  begin <-event_date - as.difftime(200, unit="days") 
-  end <-event_date + as.difftime(30, unit="days") 
+calc_abr <- function(ticker_stock, ticker_bench, event_date, est, ant, adj) {
+  back <- 7 * est
+  forward <- 7 * adj
+  begin <-event_date - as.difftime(back, unit="days") 
+  end <-event_date + as.difftime(forward, unit="days") 
   
   # - Begin - Load data
   stock <- tq_get(ticker_stock, get = "stock.prices", from = begin, to = end, periodicity = "daily") |>
@@ -28,9 +33,9 @@ calc_abr <- function(ticker_stock, ticker_bench, event_date) {
   
   abnormal_returns <- abnormal_returns |>
     mutate(dates_relative = -1 *(ID - eventID)) |>
-    mutate(time_period = ifelse(dates_relative >= 11, "EST", ifelse(dates_relative <= 10 & dates_relative >= 1, "ANT", 
+    mutate(time_period = ifelse(dates_relative > ant, "EST", ifelse(dates_relative <= ant & dates_relative > 1, "ANT", 
                                                                     ifelse(date == event_date, "EVENT", ifelse(dates_relative < 0, "ADJ", NA))))) |>
-    filter(dates_relative <= 100 & dates_relative >= -10) |> # 100 is est + adj, 10 is adj/est, 0 dates event 
+    filter(dates_relative <= (est+ant) & dates_relative >= -(adj)) |> 
     select(date, dates_relative, time_period, stock_adj, bench_adj, stock_return, bench_return) 
   
   EST <-abnormal_returns[abnormal_returns$time_period == "EST",]
@@ -41,13 +46,13 @@ calc_abr <- function(ticker_stock, ticker_bench, event_date) {
   beta <- CAPM_table$Beta 
   
   abnormal_returns <- abnormal_returns |>
-    select(date,dates_relative, time_period,stock_adj, bench_adj, stock_return, bench_return,  ) |>
+    select(date,dates_relative, time_period,stock_adj, bench_adj, stock_return, bench_return) |>
     mutate(constant_return = stock_return - average_stock_returns_est) |>
     mutate(market_model_return = stock_return - bench_return) |>
     mutate(CAPM_return =  stock_return - (alpha + beta*bench_return))
 }
 
-calc_stats <- function(abnormal_returns, ARM){
+calc_stats <- function(abnormal_returns, AA){
   # - Begin - Separate data frames
   EST <- abnormal_returns[abnormal_returns$time_period == "EST",] #easier to calculate and mor readable,
   ANT <- abnormal_returns[abnormal_returns$time_period == "ANT",] # probably not be most efficent
@@ -89,8 +94,8 @@ calc_stats <- function(abnormal_returns, ARM){
   
   T_stat_BHAR <- cbind(BHAR_returns[1],round(BHAR_returns[-1]/STD_errors[-1],digits = 6))
   
-  inital_df <- nrow(EST) # number of degrees of freedom, i.e estimation days
-  
+
+  inital_df <- nrow(EST) 
   P_val_CAR <- T_stat_CAR |>
     mutate(constant_p_val = (2 * pt(q=abs(T_stat_CAR$constant_return), lower.tail = FALSE, df=(inital_df - 1)))) |>
     mutate(market_model_p_val = (2 * pt(q=abs(T_stat_CAR$market_model_return), lower.tail = FALSE, df=(inital_df - 1)))) |>
@@ -102,12 +107,11 @@ calc_stats <- function(abnormal_returns, ARM){
     mutate(market_model_p_val = (2 * pt(q=abs(T_stat_BHAR$market_model_return), lower.tail = FALSE, df=(inital_df - 1)))) |>
     mutate(CAPM_p_val = (2 * pt(q=abs(T_stat_BHAR$CAPM_return), lower.tail = FALSE, df=(inital_df - 2)))) |>
     select(time_periods, constant_p_val, market_model_p_val, CAPM_p_val)
-  
+    
   CAR <- left_join(P_val_CAR, T_stat_CAR, by=("time_periods"))
   BHAR <- left_join(P_val_BHAR, T_stat_BHAR, by=("time_periods"))
   
-  if(ARM == 1) return (CAR) else (BHAR)
-    
+  if(AA == 1) return (CAR) else if(AA == 2) return (BHAR) else NA
 }
 
 
@@ -115,14 +119,17 @@ ui <- dashboardPage(
   dashboardHeader(title = "Significant Event Study"),
   dashboardSidebar(disable = TRUE),
   dashboardBody(
-    fluidPage(
+    fluidRow(
+    box(numericInput("est", label = h3("est"), value = 1, min = 1)),
+    box(numericInput("ant", label = h3("ant"), value = 1, min = 1)),
+    box(numericInput("adj", label = h3("Numeric input"), value = 1, min = 1)),
     box(plotOutput("arplot")),
     box(textInput("ticker_stock", h4("Stock Ticker"), value = "ATVI")),
     box(textInput("ticker_bench", h4("Bench Ticker"), value = "^GSPC")),
     dateInput("event_date", h4("Date input"), value = '2018-11-5')),
     box(plotOutput("comp_arplot")),
-    box(selectInput("car_or_bhar", h4("CAR or BHAR"), choices = list("CAR" = 1, "BHAR" = 2), selected = 1)),
-    box(tableOutput("stats"))
+    box(selectInput("car_or_bhar", h4("Aggregate Abnormal"), choices = list("None" = 0, "CAR" = 1, "BHAR" = 2), selected = 0)),
+    box(tableOutput("pstats"))    # add a title
     
 
            )
@@ -130,11 +137,13 @@ ui <- dashboardPage(
     
 
 server <- function(input, output) {
-    abr <- reactive({calc_abr(input$ticker_stock, input$ticker_bench, input$event_date)})
+    abr <- reactive({calc_abr(input$ticker_stock, input$ticker_bench, input$event_date, input$est, input$ant, input$adj)})
   
-    output$arplot <- renderPlot({
+    output$arplot <- renderPlot({ #plots stock returns
       ggplot(data = abr(), aes(x = dates_relative)) +
-        geom_line(aes(y = stock_adj, color = time_period)) +
+        geom_line(aes(y = stock_return, color = time_period)) +
+        geom_line(aes(y = bench_return, color = "black")) +
+        labs(x = 'Trading Days Before Event', y = 'Realised Returns') +
         geom_vline(aes(xintercept = 0), linetype = 2) +
         scale_x_reverse()
       })
@@ -151,9 +160,9 @@ server <- function(input, output) {
         scale_x_reverse()
     })
 
-    output$stats <- renderTable(calc_stats(abr(), input$car_or_bhar))
+    output$pstats <- renderTable(calc_stats(abr(), input$car_or_bhar))
+
 }
 
-# Run the application 
 shinyApp(ui = ui, server = server)
 
