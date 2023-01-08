@@ -6,8 +6,11 @@ ticker_stock <- "ATVI"
 ticker_bench = "^GSPC" 
 event_date <- YMD('2018-11-5') 
 
-begin <-event_date - as.difftime(400, unit="days") 
+begin <-event_date - as.difftime(300, unit="days") 
 end <- event_date + as.difftime(100, unit="days") 
+ant = 10
+adj = 10
+est = 30
 
 # - Begin - Load data
 stock <- tq_get(ticker_stock, get = "stock.prices", from = begin, to = end, periodicity = "daily") |>
@@ -30,9 +33,12 @@ eventID <- which(abnormal_returns$date == event_date, arr.ind=TRUE)
 
 abnormal_returns <- abnormal_returns |>
   mutate(dates_relative = -1 *(ID - eventID)) |>
-  mutate(time_period = ifelse(dates_relative >= 11, "EST", ifelse(dates_relative <= 10 & dates_relative >= 1, "ANT", 
-                                                                  ifelse(date == event_date, "EVENT", ifelse(dates_relative < 0, "ADJ", NA))))) |>
-  filter(dates_relative <= 100 & dates_relative >= -10) |> # 100 is est + adj, 10 is adj/est, 0 dates event 
+  mutate(time_period = ifelse(dates_relative > ant, "EST", ifelse(dates_relative <= ant & dates_relative > 1, "ANT", 
+                                                                  ifelse(date == event_date, "EVENT", ifelse(dates_relative < 0, "ADJ", NA)))))
+max_d <- est + ant
+min_d <- -1 * adj
+abnormal_returns <- abnormal_returns |>
+  filter(dates_relative <= max_d & dates_relative >= min_d) |> 
   select(date, dates_relative, time_period, stock_adj, bench_adj, stock_return, bench_return) 
 
 EST <-abnormal_returns[abnormal_returns$time_period == "EST",]

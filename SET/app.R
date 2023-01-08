@@ -9,6 +9,7 @@ library("gsubfn")
 calc_abr <- function(ticker_stock, ticker_bench, event_date, est, ant, adj) {
   back <- 7 * est
   forward <- 7 * adj
+  
   begin <-event_date - as.difftime(back, unit="days") 
   end <-event_date + as.difftime(forward, unit="days") 
   
@@ -33,9 +34,12 @@ calc_abr <- function(ticker_stock, ticker_bench, event_date, est, ant, adj) {
   
   abnormal_returns <- abnormal_returns |>
     mutate(dates_relative = -1 *(ID - eventID)) |>
-    mutate(time_period = ifelse(dates_relative > ant, "EST", ifelse(dates_relative <= ant & dates_relative > 1, "ANT", 
-                                                                    ifelse(date == event_date, "EVENT", ifelse(dates_relative < 0, "ADJ", NA))))) |>
-    filter(dates_relative <= (est+ant) & dates_relative >= -(adj)) |> 
+    mutate(time_period = ifelse(dates_relative > ant, "EST", ifelse(dates_relative <= ant & dates_relative >= 1, "ANT", 
+                                                                    ifelse(date == event_date, "EVENT", ifelse(dates_relative < 0, "ADJ", NA)))))
+  max_d <- est + ant
+  min_d <- -1 * adj
+  abnormal_returns <- abnormal_returns |>
+    filter(dates_relative <= max_d & dates_relative >= min_d) |> 
     select(date, dates_relative, time_period, stock_adj, bench_adj, stock_return, bench_return) 
   
   EST <-abnormal_returns[abnormal_returns$time_period == "EST",]
@@ -120,9 +124,9 @@ ui <- dashboardPage(
   dashboardSidebar(disable = TRUE),
   dashboardBody(
     fluidRow(
-    box(numericInput("est", label = h3("est"), value = 1, min = 1)),
-    box(numericInput("ant", label = h3("ant"), value = 1, min = 1)),
-    box(numericInput("adj", label = h3("Numeric input"), value = 1, min = 1)),
+    box(numericInput("est", label = h3("est"), value = 5, min = 1)),
+    box(numericInput("ant", label = h3("ant"), value = 2, min = 1)),
+    box(numericInput("adj", label = h3("adj"), value = 2, min = 1)),
     box(plotOutput("arplot")),
     box(textInput("ticker_stock", h4("Stock Ticker"), value = "ATVI")),
     box(textInput("ticker_bench", h4("Bench Ticker"), value = "^GSPC")),
