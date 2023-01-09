@@ -35,7 +35,7 @@ calc_abr <- function(ticker_stock, ticker_bench, event_date, est, ant, adj) {
   abnormal_returns <- abnormal_returns |>
     mutate(dates_relative = -1 *(ID - eventID)) |>
     mutate(time_period = ifelse(dates_relative > ant, "EST", ifelse(dates_relative <= ant & dates_relative >= 1, "ANT", 
-                                                                    ifelse(date == event_date, "EVENT", ifelse(dates_relative < 0, "ADJ", NA)))))
+                                                                    ifelse(dates_relative == 0, "EVENT", ifelse(dates_relative < 0, "ADJ", NA)))))
   max_d <- est + ant
   min_d <- -1 * adj
   abnormal_returns <- abnormal_returns |>
@@ -124,15 +124,15 @@ ui <- dashboardPage(
   dashboardSidebar(disable = TRUE),
   dashboardBody(
     fluidRow(
-    box(numericInput("est", label = h3("est"), value = 5, min = 1)),
-    box(numericInput("ant", label = h3("ant"), value = 2, min = 1)),
-    box(numericInput("adj", label = h3("adj"), value = 2, min = 1)),
+    box(numericInput("est", label = h3("est"), value = 5, min = 1, width = 50)),
+    box(numericInput("ant", label = h3("ant"), value = 2, min = 1, width = 50)),
+    box(numericInput("adj", label = h3("adj"), value = 2, min = 1, width = 50)),
     box(plotOutput("arplot")),
-    box(textInput("ticker_stock", h4("Stock Ticker"), value = "ATVI")),
-    box(textInput("ticker_bench", h4("Bench Ticker"), value = "^GSPC")),
-    dateInput("event_date", h4("Date input"), value = '2018-11-5')),
+    box(textInput("ticker_stock", h4("Stock Ticker"), value = "ATVI", width = 100)),
+    box(textInput("ticker_bench", h4("Bench Ticker"), value = "^GSPC", width = 100)),
+    dateInput("event_date", h4("Date input"), value = '2018-11-5', width = 100)),
     box(plotOutput("comp_arplot")),
-    box(selectInput("car_or_bhar", h4("Aggregate Abnormal"), choices = list("None" = 0, "CAR" = 1, "BHAR" = 2), selected = 0)),
+    box(selectInput("car_or_bhar", h4("Aggregate Abnormal"), choices = list("None" = 0, "CAR" = 1, "BHAR" = 2), selected = 0, width = 10)),
     box(tableOutput("pstats"))    # add a title
     
 
