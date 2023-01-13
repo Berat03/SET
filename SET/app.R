@@ -6,6 +6,12 @@ library(tidyquant)
 library(plotly)
 library("gsubfn")
 library("lubridate")
+library(shinyWidgets)
+
+# Multi-day events
+# Add option to select models in graphs
+# Inputs colum-wise
+# Garch Model
 
 calc_abr <- function(ticker_stock, ticker_bench, event_date, est, ant, adj) {
   # Get Data
@@ -26,7 +32,7 @@ calc_abr <- function(ticker_stock, ticker_bench, event_date, est, ant, adj) {
   abnormal_returns <- left_join(stock, bench, by = c("date" = "date")) |>
     mutate(ID = row_number()) 
   eventID <- which(abnormal_returns$date == event_date, arr.ind=TRUE)
-  
+  # eventID will not exist if event day is not a trading day, can check using exists(), not sure what to return without too many var
   abnormal_returns <- abnormal_returns |>
     mutate(dates_relative = as.integer(-1 *(ID - eventID))) |>
     mutate(time_period = ifelse(dates_relative > ant, "EST", 
@@ -102,10 +108,14 @@ calc_stats <- function(abnormal_returns, AA){
   if(AA == 1) return (P_val_BHAR) else if(AA == 2) return (P_val_BHAR) else NA
 }
 
+check_valid_event_day <- function(ticker_stock, ticker_bench, event_date){
+  
+}
 
 server <- function(input, output) {
-    abr <- reactive({calc_abr(input$ticker_stock, input$ticker_bench, input$event_date, input$est, input$ant, input$adj)})
-  
+    abr <- reactive({execute_safely(calc_abr(input$ticker_stock, input$ticker_bench, input$event_date, input$est, input$ant, input$adj), message = "Not a trading day")} )
+    
+    
     output$arplot <- renderPlot({ #plots stock returns
       ggplot(data = abr(), aes(x = dates_relative)) +
         geom_line(aes(y = stock_return, color = time_period)) +
