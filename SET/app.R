@@ -108,13 +108,8 @@ calc_stats <- function(abnormal_returns, AA){
   if(AA == 1) return (P_val_BHAR) else if(AA == 2) return (P_val_BHAR) else NA
 }
 
-check_valid_event_day <- function(ticker_stock, ticker_bench, event_date){
-  
-}
-
 server <- function(input, output) {
     abr <- reactive({execute_safely(calc_abr(input$ticker_stock, input$ticker_bench, input$event_date, input$est, input$ant, input$adj), message = "Not a trading day")} )
-    
     
     output$arplot <- renderPlot({ #plots stock returns
       ggplot(data = abr(), aes(x = dates_relative)) +
