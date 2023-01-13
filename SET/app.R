@@ -134,26 +134,36 @@ server <- function(input, output) {
     })
 
     output$pstat <- renderTable(calc_stats(abr(), input$car_or_bhar))
-
 }
 
+
 ui <- dashboardPage(
-  dashboardHeader(title = "Event Study"),
-  dashboardSidebar(disable = TRUE),
-  dashboardBody(
-    div(style="display: inline-block;vertical-align:top; width: 150px;", numericInput("est", label = h3("Estimation"), value = 30, min = 1)),
-    div(style="display: inline-block;vertical-align:top; width: 150px;", numericInput("ant", label = h3("Anticipation"), value = 10, min = 1)),
-    div(style="display: inline-block;vertical-align:top; width: 150px;", dateInput("event_date", h3("Date input"), value = '2018-11-5')),
-    div(style="display: inline-block;vertical-align:top; width: 150px;", numericInput("adj", label = h3("Adjustment"), value = 10, min = 1)),
-    div(style="display: inline-block;vertical-align:top; width: 100px;",HTML("<br>")),
-    div(style="display: inline-block;vertical-align:top; width: 150px;", textInput("ticker_stock", h3("Stock Ticker"), value = "ATVI")),
-    div(style="display: inline-block;vertical-align:top; width: 150px;", textInput("ticker_bench", h3("Bench Ticker"), value = "^GSPC")),
-    plotOutput("arplot"),
-    plotOutput("comp_arplot"),
-    div(style="display: width: 150px;", selectInput("car_or_bhar", h3("Aggregate Abnormal"), choices = list("CAR" = 1, "BHAR" = 2), selected = 1)),
-    tableOutput("pstat")
+  dashboardHeader(title = "Learning Markets"),
+  dashboardSidebar(menuItem(h3("Event Study"), tabName = "eventstudy"),
+                   menuItem(h3("Market Trends"), tabName = "markettrends"),
+                   menuItem(h3("Market Sentiment"), tabName = "marketsentiment"),
+                   menuItem(h3("About"), tabName = "about")),
+  
+  dashboardBody(skin = "yellow", 
+      tabItems(
+          tabItem(tabName = "eventstudy", 
+            div(style="display: inline-block;vertical-align:top; width: 150px;", numericInput("est", label = h3("Estimation"), value = 30, min = 1)),
+            div(style="display: inline-block;vertical-align:top; width: 150px;", numericInput("ant", label = h3("Anticipation"), value = 10, min = 1)),
+            div(style="display: inline-block;vertical-align:top; width: 150px;", dateInput("event_date", h3("Date input"), value = '2018-11-5')),
+            div(style="display: inline-block;vertical-align:top; width: 150px;", numericInput("adj", label = h3("Adjustment"), value = 10, min = 1)),
+            div(style="display: inline-block;vertical-align:top; width: 100px;",HTML("<br>")),
+            div(style="display: inline-block;vertical-align:top; width: 150px;", textInput("ticker_stock", h3("Stock Ticker"), value = "ATVI")),
+            div(style="display: inline-block;vertical-align:top; width: 150px;", textInput("ticker_bench", h3("Bench Ticker"), value = "^GSPC")),
+            plotOutput("arplot"),
+            plotOutput("comp_arplot"),
+            div(style="display: width: 150px;", selectInput("car_or_bhar", h3("Aggregate Abnormal"), choices = list("CAR" = 1, "BHAR" = 2), selected = 1)),
+            tableOutput("pstat")
+    ), 
+    tabItem(tabName= "markettrends", HTML("Some Text Here <br> and a new line here"))
+    )
   )
 )
+
 
 shinyApp(ui = ui, server = server)
 
