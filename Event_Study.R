@@ -134,16 +134,11 @@ ggplot(ar_compare_models, aes(x = dates_relative)) +
 
 ####################################################################################
 # Calculate P values for each day with period
-abnormal_returns <- abnormal_returns |>
-  pivot_longer(cols = c(ConstantModel, MarketModel, CAPM), names_to = 'model', values_to = 'value') |>
-  mutate(t_stat = ifelse(model=="CAPM", (value/stdev_capm), ifelse(model=="MarketModel", (value/stdev_market),
-                                                                   ifelse(model=="ConstantModel", (value/stdev_const), NA)))) |>
-  mutate(p_val = ifelse(model=="CAPM", (2 * pt(q=abs(t_stat_CAR$ConstantModel), lower.tail = FALSE, df=(inital_df - 1))), 
-                                               ifelse(model=="MarketModel", (2 * pt(q=abs(t_stat_CAR$MarketModel), lower.tail = FALSE, df=(inital_df - 1))),
-                                                                  ifelse(model=="ConstantModel", (2 * pt(q=abs(t_stat_CAR$CAPM), lower.tail = FALSE, df=(inital_df - 2))), NA))))
-### This does not look correct at all. IG because its standard dev
- # it goes both ways.
-ggplot(abnormal_returns, aes(x = dates_relative)) +
-  geom_line(aes(y = p_val, color = time_period))+
-  scale_x_reverse()
+#abnormal_returns <- abnormal_returns |>
+ # pivot_longer(cols = c(ConstantModel, MarketModel, CAPM), names_to = 'model', values_to = 'value') |>
+  #mutate(t_stat = ifelse(model=="CAPM", (value/stdev_capm), ifelse(model=="MarketModel", (value/stdev_market),
+   #                                                                ifelse(model=="ConstantModel", (value/stdev_const), NA)))) |>
+  #mutate(p_val = ifelse(model=="CAPM", (2 * pt(q=abs(t_stat_CAR$ConstantModel), lower.tail = FALSE, df=(inital_df - 1))), 
+    #                                           ifelse(model=="MarketModel", (2 * pt(q=abs(t_stat_CAR$MarketModel), lower.tail = FALSE, df=(inital_df - 1))),
+     #                                                             ifelse(model=="ConstantModel", (2 * pt(q=abs(t_stat_CAR$CAPM), lower.tail = FALSE, df=(inital_df - 2))), NA))))
 
