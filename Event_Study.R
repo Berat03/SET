@@ -3,7 +3,6 @@ library(ggplot2)
 library(tidyverse)
 library(tidyquant)
 
-rm(ls=list())
 # User Inputs
 ant = 10
 est = 30
@@ -11,9 +10,6 @@ adj = 10
 ticker_stock <- "ATVI" 
 ticker_bench <- "^GSPC" 
 event_date <- YMD("2018-11-05") 
-
-
-
 
 ###############################################################################
 
