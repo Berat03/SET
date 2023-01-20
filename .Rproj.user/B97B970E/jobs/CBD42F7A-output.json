@@ -1,0 +1,3 @@
+[1,"=> shiny::runApp()\n\n"]
+[2,"Loading required package: shiny\nError in parse(file, keep.source = FALSE, srcfile = src, encoding = enc) : \n  /Users/berat/Desktop/SET_event_study/SET/app.R:160:9: unexpected ','\n159: \n160:     pval,\n             ^\nPossible extra comma at:\n48:    select(date,dates_relative, time_period,stock_adj, bench_adj, stock_return, bench_return,  ) |>\n                                                                                               ^\nError in sourceUTF8(fullpath, envir = new.env(parent = sharedEnv)) : \n  Error sourcing /Users/berat/Desktop/SET_event_study/SET/app.R\nCalls: <Anonymous> ... shinyAppDir -> shinyAppDir_appR -> appObj -> func -> sourceUTF8\nExecution halted\n"]
+[1,"\nShiny application failed (exit status 1).\n\n"]

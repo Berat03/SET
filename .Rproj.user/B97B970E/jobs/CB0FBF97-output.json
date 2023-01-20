@@ -1,0 +1,4 @@
+[1,"=> shiny::runApp()\n\n"]
+[2,"Loading required package: shiny\nError in parse(file, keep.source = FALSE, srcfile = src, encoding = enc) : \n  /Users/berat/Desktop/SET_event_study/SET/app.R:136:1: unexpected symbol\n135: \n136: server\n     ^\n"]
+[2,"Possible missing comma at:\n136:server <- function(input, output) {\n    ^\nError in sourceUTF8(fullpath, envir = new.env(parent = sharedEnv)) : \n  Error sourcing /Users/berat/Desktop/SET_event_study/SET/app.R\nCalls: <Anonymous> ... shinyAppDir -> shinyAppDir_appR -> appObj -> func -> sourceUTF8\nExecution halted\n"]
+[1,"\nShiny application failed (exit status 1).\n\n"]
