@@ -1,8 +1,3 @@
-library(tidyquant)
-library(ggplot2)
-library(tidyverse)
-library(tidyquant)
-
 # User Inputs
 ant = 10
 est = 30
@@ -10,8 +5,6 @@ adj = 10
 ticker_stock <- "ATVI" 
 ticker_bench <- "^GSPC" 
 event_date <- YMD("2018-11-05") 
-
-###############################################################################
 
 # Dates to index from
 begin <-event_date - as.difftime((7 * est), unit="days") 
@@ -106,10 +99,6 @@ p_val_BHAR <- t_stat_BHAR |>
   mutate(MarketModel = (2 * pt(q=abs(t_stat_BHAR$MarketModel), lower.tail = FALSE, df=(inital_df - 1)))) |>
   mutate(CAPM = (2 * pt(q=abs(t_stat_BHAR$CAPM), lower.tail = FALSE, df=(inital_df - 2)))) |>
   select(time_periods, ConstantModel, MarketModel, CAPM)
-
-
-
-####################################################################################
 
 ggplot(data = abnormal_returns, aes(x = dates_relative)) +
   geom_line(aes(y = stock_return, color = time_period)) +
