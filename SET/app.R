@@ -138,7 +138,7 @@ server <- function(input, output) {
 
 
 ui <- dashboardPage(
-  dashboardHeader(title = h3("Market Study")),
+  dashboardHeader(title = h3("Time Series Tools")),
   dashboardSidebar(menuItem(h3("Event Study"), tabName = "eventstudy"),
                    menuItem(h3("Market Trends"), tabName = "markettrends"),
                    menuItem(h3("Market Sentiment"), tabName = "marketsentiment"),
